@@ -6,19 +6,19 @@ import { config } from './config.js';
  * Load progress from data/progress.json.
  * @returns {{ processedIndex: number, totalCount?: number } | null}
  */
-export async function loadProgress() {
-  try {
-    const raw = await fs.readFile(config.paths.progressFile, 'utf-8');
-    const data = JSON.parse(raw);
-    return {
-      processedIndex: typeof data.processedIndex === 'number' ? data.processedIndex : -1,
-      totalCount: typeof data.totalCount === 'number' ? data.totalCount : undefined,
-    };
-  } catch (e) {
-    if (e.code === 'ENOENT') return null;
-    throw e;
-  }
-}
+// export async function loadProgress() {
+//   try {
+//     const raw = await fs.readFile(config.paths.progressFile, 'utf-8');
+//     const data = JSON.parse(raw);
+//     return {
+//       processedIndex: typeof data.processedIndex === 'number' ? data.processedIndex : -1,
+//       totalCount: typeof data.totalCount === 'number' ? data.totalCount : undefined,
+//     };
+//   } catch (e) {
+//     if (e.code === 'ENOENT') return null;
+//     throw e;
+//   }
+// }
 
 /**
  * Save progress so the run can be resumed later.

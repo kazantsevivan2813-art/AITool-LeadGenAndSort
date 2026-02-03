@@ -18,7 +18,7 @@ export async function searchCompany(query) {
     },
     body: JSON.stringify({
       q: query,
-      num: 5,
+      num: 8,
     }),
   });
   if (!res.ok) {
@@ -67,9 +67,7 @@ export async function searchCompanyMaps(query) {
 
   const p = places[0] || {};
   return {
-    title: p.title || '',
-    link: p.link || '',
-    website: p.website || '',
+    link : "https://www.google.com/maps/place/?q=place_id:" + p.placeId || '',
   };
 }
 

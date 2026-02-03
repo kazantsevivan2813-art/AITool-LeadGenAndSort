@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 import { createGunzip } from 'zlib';
 import StreamArray from 'stream-json/streamers/StreamArray.js';
 import { config } from './config.js';
-import { loadProgress, saveProgress, clearProgress } from './progress.js';
+import { saveProgress, clearProgress } from './progress.js';
 import { ensureCsvFile, appendCsvRow } from './csv.js';
 import { promptUpdateDatabase, promptPostnummerRange } from './prompt.js';
 import { extractRow } from './extract.js';
@@ -46,22 +46,6 @@ async function processOne(obj, index) {
       if (results.length) {
         await delay(config.requestDelayMs);
         company_website = await identifyCompanyWebsite(row.navn, results);
-      }
-
-      // Fallback: if no website/Facebook found, try Google Maps / Business profile via Serper maps endpoint
-      if (!company_website) {
-        const fa = obj.forretningsadresse || {};
-        const locationParts = [];
-        if (fa.postnummer) locationParts.push(String(fa.postnummer));
-        if (fa.poststed) locationParts.push(String(fa.poststed));
-        locationParts.push('Norway');
-        const mapsQuery = `${row.navn} ${locationParts.join(' ')}`.trim();
-
-        await delay(config.requestDelayMs);
-        const mapsResult = await searchCompanyMaps(mapsQuery);
-        if (mapsResult) {
-          company_website = mapsResult.website || mapsResult.link || '';
-        }
       }
     } catch (e) {
       console.error(`[${index}] Serper/OpenAI error for "${row.navn}":`, e.message);
@@ -150,10 +134,11 @@ export async function runPipeline(opts = {}) {
     } else {
       console.log('Skipping download. Using existing file.');
       gzPath = config.paths.downloadedGz;
-      const progress = await loadProgress();
-      resumeFrom = progress ? progress.processedIndex + 1 : 0;
-      // appendCsv = true means "append if file exists", but ensureCsvFile will check and write header if file doesn't exist
-      appendCsv = resumeFrom > 0;
+      // const progress = await loadProgress();
+      // resumeFrom = progress ? progress.processedIndex + 1 : 0;
+      // // appendCsv = true means "append if file exists", but ensureCsvFile will check and write header if file doesn't exist
+      // appendCsv = resumeFrom > 0;
+      await clearProgress();
       await ensureCsvFile(appendCsv);
       if (resumeFrom > 0) {
         console.log(`Resuming from index ${resumeFrom} (${progress.processedIndex + 1} already processed).`);
@@ -170,7 +155,7 @@ export async function runPipeline(opts = {}) {
   // Ask for postnummer range filter (forretningsadresse.postnummer)
   const postnummerRange = await promptPostnummerRange();
 
-  const progress = await loadProgress();
+  const progress = await clearProgress();
   let lastProcessedIndex = progress ? progress.processedIndex : -1;
 
   // Step 2: Process data (decompress, parse JSON array, extract to CSV, Serper/OpenAI)

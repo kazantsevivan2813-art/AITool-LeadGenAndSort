@@ -16,15 +16,21 @@ export async function identifyCompanyWebsite(companyName, results) {
     .map((r, i) => `${i + 1}. Title: ${r.title}\n   URL: ${r.link}\n   Snippet: ${r.snippet}`)
     .join('\n\n');
 
-  const sys = `You are a tool that identifies the best URL for a Norwegian company from search results.
-All companies are located in Norway. Prefer Norwegian websites (e.g. .no domains) when they clearly belong to the company.
-Priority:
-1) First choose the company's own official website (owned by the company, not a directory or aggregator).
-2) If there is no clear official website, choose the company's Facebook page URL.
-Always exclude domains like proff.no and 1881.no. These are business directories, not the company's own site.
-Given a company name and a list of 5 search results (title, URL, snippet), respond with ONLY the single URL that best matches the above priority.
-If none of the results clearly match any of the above, respond with exactly: NONE
-Do not include any explanation, only the URL or NONE.`;
+  const sys = `You are a tool that picks ONE URL for a Norwegian company from search results. Use this priority:
+
+1) First: The company's own official website (the company owns the domain; e.g. companyname.no).
+2) Second: The company's Facebook page (facebook.com/... or fb.com/... for this company).
+3) Third (only if there is no clear official website and no Facebook): A business directory / listing page for this company. Use this order of preference for the third option:
+   - tracxn.com 
+   - proff.no 
+   - 1881.no / www.1881.no 
+   - Other similar directory or "company info" pages that show this specific company.
+
+Do NOT choose brreg.no (general company register). Do NOT choose a random directory page that is not about this company.
+
+If none of the results match any of the above, respond with exactly: NONE
+
+Given the company name and the list of search results (title, URL, snippet), respond with ONLY one URL or NONE. No explanation.`;
 
   const user = `Country: Norway\nCompany name: ${companyName}\n\nSearch results:\n${resultsText}`;
 
