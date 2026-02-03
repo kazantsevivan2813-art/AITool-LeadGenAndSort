@@ -1,0 +1,20 @@
+{
+  "name": "norway-company-scraper",
+  "version": "1.0.0",
+  "description": "Download, extract and enrich Norwegian company data from .gz JSON; resumable progress with optional update prompt.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "run-once": "node src/run-once.js",
+    "schedule": "node src/scheduler.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "openai": "^4.20.0",
+    "stream-json": "^1.7.5"
+  }
+}
