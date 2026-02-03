@@ -39,13 +39,21 @@ async function processOne(obj, index) {
   const row = extractRow(obj);
   let company_website = '';
 
-  if (row.navn && (config.serperApiKey && config.openaiApiKey)) {
+  if (row.navn && config.serperApiKey) {
     try {
       await delay(config.requestDelayMs);
       const results = await searchCompany(row.navn);
-      if (results.length) {
+      if (results.length && config.openaiApiKey) {
         await delay(config.requestDelayMs);
         company_website = await identifyCompanyWebsite(row.navn, results);
+      }
+      // When company site is still none: search "companyName proff" and use first result as company website
+      if (!company_website && row.navn) {
+        await delay(config.requestDelayMs);
+        const proffResults = await searchCompany(`${row.navn} proff`);
+        if (proffResults.length && proffResults[0].link) {
+          company_website = proffResults[0].link.startsWith('http') ? proffResults[0].link : `https://${proffResults[0].link}`;
+        }
       }
     } catch (e) {
       console.error(`[${index}] Serper/OpenAI error for "${row.navn}":`, e.message);

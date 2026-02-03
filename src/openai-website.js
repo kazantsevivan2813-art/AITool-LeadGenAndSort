@@ -16,21 +16,14 @@ export async function identifyCompanyWebsite(companyName, results) {
     .map((r, i) => `${i + 1}. Title: ${r.title}\n   URL: ${r.link}\n   Snippet: ${r.snippet}`)
     .join('\n\n');
 
-  const sys = `You are a tool that picks ONE URL for a Norwegian company from search results. Use this priority:
+  const sys = `You identify the company website or Facebook page for a Norwegian company from search results. Reply with ONLY one URL, or NONE.
 
-1) First: The company's own official website (the company owns the domain; e.g. companyname.no).
-2) Second: The company's Facebook page (facebook.com/... or fb.com/... for this company).
-3) Third (only if there is no clear official website and no Facebook): A business directory / listing page for this company. Use this order of preference for the third option:
-   - tracxn.com 
-   - proff.no 
-   - 1881.no / www.1881.no 
-   - Other similar directory or "company info" pages that show this specific company.
+Return a URL only if it is one of these two (and only these two):
+1) The company's own official website — the company owns the domain (e.g. companyname.no, companyname.com). Not a directory, not a listing site, not brreg.no.
+2) The company's Facebook page — a facebook.com or fb.com page that is this company's official page.
 
-Do NOT choose brreg.no (general company register). Do NOT choose a random directory page that is not about this company.
-
-If none of the results match any of the above, respond with exactly: NONE
-
-Given the company name and the list of search results (title, URL, snippet), respond with ONLY one URL or NONE. No explanation.`;
+Do not return directory sites, listing sites, proff.no, 1881.no, tracxn.com, brreg.no, or any other third-party page. Only the company's own website or their Facebook page.
+If there is no clear company website and no clear Facebook page in the results, reply with exactly: NONE`;
 
   const user = `Country: Norway\nCompany name: ${companyName}\n\nSearch results:\n${resultsText}`;
 
@@ -45,11 +38,13 @@ Given the company name and the list of search results (title, URL, snippet), res
       temperature: 0,
     });
     const content = (completion.choices[0]?.message?.content || '').trim();
-    if (!content || content.toUpperCase() === 'NONE') return '';
-    // Normalize: if it looks like a URL, return it
-    if (/^https?:\/\//i.test(content)) return content;
-    if (/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}/.test(content)) return `https://${content.replace(/^https?:\/\//i, '')}`;
-    return content;
+    let url = '';
+    if (content && content.toUpperCase() !== 'NONE') {
+      if (/^https?:\/\//i.test(content)) url = content;
+      else if (/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}/.test(content)) url = `https://${content.replace(/^https?:\/\//i, '')}`;
+      else url = content;
+    }
+    return url;
   } catch (e) {
     console.error('OpenAI identifyCompanyWebsite error:', e.message);
     return '';

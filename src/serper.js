@@ -18,7 +18,7 @@ export async function searchCompany(query) {
     },
     body: JSON.stringify({
       q: query,
-      num: 8,
+      num: 7,
     }),
   });
   if (!res.ok) {
@@ -27,7 +27,7 @@ export async function searchCompany(query) {
   }
   const data = await res.json();
   const organic = data.organic || [];
-  return organic.slice(0, 5).map((o) => ({
+  return organic.slice(0, 7).map((o) => ({
     title: o.title || '',
     link: o.link || '',
     snippet: o.snippet || '',
