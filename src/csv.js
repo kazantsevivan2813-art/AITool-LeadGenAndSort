@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { access } from 'fs/promises';
 import { config } from './config.js';
 
 const CSV_HEADER = [
@@ -25,13 +26,28 @@ function escapeCsv(value) {
 }
 
 /**
+ * Check if the CSV file exists.
+ * @returns {Promise<boolean>}
+ */
+export async function csvFileExists() {
+  try {
+    await access(config.paths.outputCsv);
+    return true;
+  } catch (e) {
+    if (e.code === 'ENOENT') return false;
+    throw e;
+  }
+}
+
+/**
  * Ensure data dir exists and CSV file has header (for new file).
- * @param {boolean} append - If true, only ensure dir; do not write header.
+ * @param {boolean} append - If true, only ensure dir; do not write header (only if file exists).
  */
 export async function ensureCsvFile(append) {
   const dir = path.dirname(config.paths.outputCsv);
   await fs.mkdir(dir, { recursive: true });
-  if (!append) {
+  const exists = await csvFileExists();
+  if (!append || !exists) {
     const headerLine = CSV_HEADER.map(escapeCsv).join(',') + '\n';
     await fs.writeFile(config.paths.outputCsv, headerLine, 'utf-8');
   }

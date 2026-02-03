@@ -121,6 +121,7 @@ export async function runPipeline(opts = {}) {
       gzPath = config.paths.downloadedGz;
       const progress = await loadProgress();
       resumeFrom = progress ? progress.processedIndex + 1 : 0;
+      // appendCsv = true means "append if file exists", but ensureCsvFile will check and write header if file doesn't exist
       appendCsv = resumeFrom > 0;
       await ensureCsvFile(appendCsv);
       if (resumeFrom > 0) {
