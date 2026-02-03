@@ -41,7 +41,7 @@ export async function searchCompany(query) {
  * @param {string} query - e.g. `${companyName} ${location}`
  * @returns {Promise<{ title: string, link: string, website: string } | null>}
  */
-export async function searchCompanyMaps(query) {
+export async function searchCompanyGooglePage(query) {
   if (!config.serperApiKey) {
     console.warn('SERPER_API_KEY not set; skipping maps lookup');
     return null;
@@ -66,8 +66,11 @@ export async function searchCompanyMaps(query) {
   if (!places.length) return null;
 
   const p = places[0] || {};
-  return {
-    link : "https://www.google.com/maps/place/?q=place_id:" + p.placeId || '',
-  };
+  const placeId = p.placeId || '';
+  if (!placeId) return null;
+
+  if (p.title.toLowerCase() == query.toLowerCase()) {
+    return "https://www.google.com/maps/place/?q=place_id:" + p.placeId || '';
+  }
 }
 

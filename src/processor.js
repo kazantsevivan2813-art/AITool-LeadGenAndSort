@@ -8,7 +8,7 @@ import { saveProgress, clearProgress } from './progress.js';
 import { ensureCsvFile, appendCsvRow } from './csv.js';
 import { promptUpdateDatabase, promptPostnummerRange } from './prompt.js';
 import { extractRow } from './extract.js';
-import { searchCompany, searchCompanyMaps } from './serper.js';
+import { searchCompany, searchCompanyGooglePage } from './serper.js';
 import { identifyCompanyWebsite } from './openai-website.js';
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -48,11 +48,10 @@ async function processOne(obj, index) {
         company_website = await identifyCompanyWebsite(row.navn, results);
       }
       // When company site is still none: search "companyName proff" and use first result as company website
-      if (!company_website && row.navn) {
-        await delay(config.requestDelayMs);
-        const proffResults = await searchCompany(`${row.navn} proff`);
-        if (proffResults.length && proffResults[0].link) {
-          company_website = proffResults[0].link.startsWith('http') ? proffResults[0].link : `https://${proffResults[0].link}`;
+      if (!company_website) {
+        const businessPageURL = await searchCompanyGooglePage(row.navn);
+        if (businessPageURL) {
+          company_website = businessPageURL;
         }
       }
     } catch (e) {
