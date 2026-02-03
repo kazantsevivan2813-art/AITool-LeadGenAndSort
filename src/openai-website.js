@@ -16,11 +16,14 @@ export async function identifyCompanyWebsite(companyName, results) {
     .map((r, i) => `${i + 1}. Title: ${r.title}\n   URL: ${r.link}\n   Snippet: ${r.snippet}`)
     .join('\n\n');
 
-  const sys = `You are a tool that identifies the official company website from search results.
+  const sys = `You are a tool that identifies the best URL for a Norwegian company from search results.
 All companies are located in Norway. Prefer Norwegian websites (e.g. .no domains) when they clearly belong to the company.
-Exclude proff.no and 1881.no in domains.
-Given a company name and a list of 5 search results (title, URL, snippet), respond with ONLY the URL that is most likely the company's official website.
-If none of the results clearly look like the company's own site, respond with exactly: NONE
+Priority:
+1) First choose the company's own official website (owned by the company, not a directory or aggregator).
+2) If there is no clear official website, choose the company's Facebook page URL.
+Always exclude domains like proff.no and 1881.no. These are business directories, not the company's own site.
+Given a company name and a list of 5 search results (title, URL, snippet), respond with ONLY the single URL that best matches the above priority.
+If none of the results clearly match any of the above, respond with exactly: NONE
 Do not include any explanation, only the URL or NONE.`;
 
   const user = `Country: Norway\nCompany name: ${companyName}\n\nSearch results:\n${resultsText}`;

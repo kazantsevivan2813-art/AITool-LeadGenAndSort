@@ -33,3 +33,43 @@ export async function searchCompany(query) {
     snippet: o.snippet || '',
   }));
 }
+
+/**
+ * Search Google Maps / Business profile via Serper API.
+ * Returns the first maps result (title, link, website if available).
+ * This is used as a fallback when no clear website/Facebook URL is found.
+ * @param {string} query - e.g. `${companyName} ${location}`
+ * @returns {Promise<{ title: string, link: string, website: string } | null>}
+ */
+export async function searchCompanyMaps(query) {
+  if (!config.serperApiKey) {
+    console.warn('SERPER_API_KEY not set; skipping maps lookup');
+    return null;
+  }
+  const res = await fetch('https://google.serper.dev/maps', {
+    method: 'POST',
+    headers: {
+      'X-API-KEY': config.serperApiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      q: query,
+      limit: 1,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Serper Maps API error ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  const places = data.places || data.placesResults || [];
+  if (!places.length) return null;
+
+  const p = places[0] || {};
+  return {
+    title: p.title || '',
+    link: p.link || '',
+    website: p.website || '',
+  };
+}
+

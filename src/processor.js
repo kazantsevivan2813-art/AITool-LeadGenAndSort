@@ -1,18 +1,33 @@
 import { createReadStream } from 'fs';
-import { mkdir } from 'fs/promises';
-import { access } from 'fs/promises';
+import { mkdir, access } from 'fs/promises';
 import { spawn } from 'child_process';
 import { createGunzip } from 'zlib';
 import StreamArray from 'stream-json/streamers/StreamArray.js';
 import { config } from './config.js';
 import { loadProgress, saveProgress, clearProgress } from './progress.js';
 import { ensureCsvFile, appendCsvRow } from './csv.js';
-import { promptUpdateDatabase } from './prompt.js';
+import { promptUpdateDatabase, promptPostnummerRange } from './prompt.js';
 import { extractRow } from './extract.js';
-import { searchCompany } from './serper.js';
+import { searchCompany, searchCompanyMaps } from './serper.js';
 import { identifyCompanyWebsite } from './openai-website.js';
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Check whether a company's forretningsadresse.postnummer is inside the selected range.
+ * @param {object} obj - company JSON object
+ * @param {{from: number|null, to: number|null}} range
+ */
+function isInPostnummerRange(obj, range) {
+  if (!range || (range.from == null && range.to == null)) return true;
+  const pnRaw = obj?.forretningsadresse?.postnummer;
+  if (pnRaw == null) return false;
+  const pn = Number(pnRaw);
+  if (Number.isNaN(pn)) return false;
+  if (range.from != null && pn < range.from) return false;
+  if (range.to != null && pn > range.to) return false;
+  return true;
+}
 
 /**
  * Process one company: extract row, get website via Serper + OpenAI, append to CSV.
@@ -31,6 +46,22 @@ async function processOne(obj, index) {
       if (results.length) {
         await delay(config.requestDelayMs);
         company_website = await identifyCompanyWebsite(row.navn, results);
+      }
+
+      // Fallback: if no website/Facebook found, try Google Maps / Business profile via Serper maps endpoint
+      if (!company_website) {
+        const fa = obj.forretningsadresse || {};
+        const locationParts = [];
+        if (fa.postnummer) locationParts.push(String(fa.postnummer));
+        if (fa.poststed) locationParts.push(String(fa.poststed));
+        locationParts.push('Norway');
+        const mapsQuery = `${row.navn} ${locationParts.join(' ')}`.trim();
+
+        await delay(config.requestDelayMs);
+        const mapsResult = await searchCompanyMaps(mapsQuery);
+        if (mapsResult) {
+          company_website = mapsResult.website || mapsResult.link || '';
+        }
       }
     } catch (e) {
       console.error(`[${index}] Serper/OpenAI error for "${row.navn}":`, e.message);
@@ -136,6 +167,9 @@ export async function runPipeline(opts = {}) {
     await ensureCsvFile(false);
   }
 
+  // Ask for postnummer range filter (forretningsadresse.postnummer)
+  const postnummerRange = await promptPostnummerRange();
+
   const progress = await loadProgress();
   let lastProcessedIndex = progress ? progress.processedIndex : -1;
 
@@ -155,7 +189,18 @@ export async function runPipeline(opts = {}) {
       arrayStream.pause();
 
       try {
+        // Skip already processed indices on resume
         if (index < resumeFrom) {
+          lastProcessedIndex = index;
+          await saveProgress(index);
+          arrayStream.resume();
+          return;
+        }
+
+        // Filter by postnummer range to avoid unnecessary work
+        if (!isInPostnummerRange(value, postnummerRange)) {
+          lastProcessedIndex = index;
+          await saveProgress(index);
           arrayStream.resume();
           return;
         }
