@@ -9,6 +9,8 @@ Node.js app that runs every 24 hours to:
 
 **Resumable:** If you stop the process (e.g. Ctrl+C), progress is saved. On the next run it continues from the next index (skips already-processed items and appends only new rows to the CSV).
 
+**Detailed step-by-step guide for macOS:** see [docs/RUN-ON-MACOS.md](docs/RUN-ON-MACOS.md).
+
 ---
 
 ## Requirements

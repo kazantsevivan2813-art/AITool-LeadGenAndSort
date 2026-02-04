@@ -10,16 +10,22 @@ export async function searchCompany(query) {
     console.warn('SERPER_API_KEY not set; skipping website lookup');
     return [];
   }
+  let json = {}
+  if (query.endsWith(' AS')) {
+    query = query + ' a';
+    json.q = query;
+    json.gl = "no";
+  } else {
+    json.q = query;
+  }
+  json.num = 7;
   const res = await fetch('https://google.serper.dev/search', {
     method: 'POST',
     headers: {
       'X-API-KEY': config.serperApiKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      q: query,
-      num: 7,
-    }),
+    body: JSON.stringify(json),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -67,9 +73,10 @@ export async function searchCompanyGooglePage(query) {
 
   const p = places[0] || {};
   const placeId = p.placeId || '';
-  if (!placeId) return null;
+  const address = p.address || '';
+  if (!placeId || !address.includes('Norway')) return null;
 
-  if (p.title.toLowerCase() == query.toLowerCase()) {
+  if (query.toLowerCase().includes(p.title.toLowerCase()) || p.title.toLowerCase().includes(query.toLowerCase())) {
     return "https://www.google.com/maps/place/?q=place_id:" + p.placeId || '';
   }
 }

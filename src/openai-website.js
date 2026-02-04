@@ -16,14 +16,28 @@ export async function identifyCompanyWebsite(companyName, results) {
     .map((r, i) => `${i + 1}. Title: ${r.title}\n   URL: ${r.link}\n   Snippet: ${r.snippet}`)
     .join('\n\n');
 
-  const sys = `You identify the company website or Facebook page for a Norwegian company from search results. Reply with ONLY one URL, or NONE.
+  const sys = `You are given search results for a Norwegian company.
+Each result has a Title, URL and Snippet.
 
-Return a URL only if it is one of these two (and only these two):
-1) The company's own official website — the company owns the domain (e.g. companyname.no, companyname.com). Not a directory, not a listing site, not brreg.no.
-2) The company's Facebook page — a facebook.com or fb.com page that is this company's official page.
+Your task: pick EXACTLY ONE URL, or reply with NONE.
 
-Do not return directory sites, listing sites, proff.no, 1881.no, tracxn.com, brreg.no, or any other third-party page. Only the company's own website or their Facebook page.
-If there is no clear company website and no clear Facebook page in the results, reply with exactly: NONE`;
+Algorithm:
+1) Look for the company's own website:
+   - If url contains company name, the main domain (e.g. www.companyname.no) must contain the company name or a clear abbreviation of it.
+     Example: company "BLIKKENSLAGER RUNE EDVARDSEN" → domain should be like runeedvardsen.no, not blikkenslag.no.
+   - A page like www.blikkenslag.no/blikkenslagere/... is NOT the company's site: the domain is blikkenslag.no (a directory), so reject it.
+   - Also reject any directory/listing domain: proff.no, 1881.no, tracxn.com, brreg.no, blikkenslag.no, saffa.no, yra.no, gulesider.no, oljelandet.no,vibbo.no, inpartiet.no,jubilee.no, expertvask.no, www.bestilletransport.no, no.wikipedia.org, regnskapsklinikken.no and similar sites that list many businesses.
+   - Title or Snippet should clearly match the company name.
+   - If several match, choose the one that appears earliest in the list.
+
+2) If you cannot find a clear company website, look for the company's Facebook page:
+   - A facebook.com or fb.com URL.
+   - Title or Snippet clearly contains the company name.
+   - If several match, choose the one that appears earliest in the list.
+
+3) If no result matches step 1 or step 2, reply with exactly: NONE.
+
+Output format: ONLY the chosen URL (no explanation), or the word NONE.`;
 
   const user = `Country: Norway\nCompany name: ${companyName}\n\nSearch results:\n${resultsText}`;
 
